@@ -1,0 +1,41 @@
+apiVersion: 1
+datasources:
+  # jaeger: trace storage
+  - access: proxy
+    basicAuth: false
+    editable: true
+    isDefault: false
+    name: jaeger
+    type: jaeger
+    uid: jaeger
+    url: http://jaeger:16686
+    # FIXME configure trace correlation with metrics/logs: https://grafana.com/docs/grafana/latest/datasources/jaeger/
+    version: 1
+
+  # loki: log storage
+  - access: proxy
+    basicAuth: false
+    jsonData:
+      httpHeaderName1: "X-Scope-OrgID"
+    secureJsonData:
+      httpHeaderValue1: "docker"
+    editable: true
+    isDefault: true
+    name: loki
+    type: loki
+    uid: loki
+    url: http://loki:3100
+    # FIXME configure log correlation with metrics/traces: https://grafana.com/docs/grafana/latest/datasources/loki/
+    version: 1
+
+  # prometheus: metric storage
+  - access: proxy
+    basicAuth: false
+    editable: true
+    isDefault: false
+    name: prometheus
+    type: prometheus
+    uid: prometheus
+    url: http://prometheus:9090
+    # FIXME configure log correlation with metrics/traces: https://grafana.com/docs/grafana/latest/datasources/prometheus/
+    version: 1

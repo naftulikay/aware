@@ -1,0 +1,104 @@
+version: "3"
+
+volumes:
+  # persistent volumes for storage backends which will remain across container lifetimes
+  jaeger-data: {}     # storage of traces on-disk from jaeger
+  loki-data: {}       # storage of log data on-disk from loki
+  prometheus-data: {} # storage of metrics data on-disk from prometheus
+
+services:
+  jaeger:  # storage backend for trace data
+    image: jaegertracing/all-in-one:${JAEGER_VERSION}
+    hostname: jaeger
+    environment:
+      # enable opentelemetry support
+      COLLECTOR_OTLP_ENABLED: true
+      # store traces on disk as opposed to memory, allowing persistence between container restarts
+      SPAN_STORAGE_TYPE: badger
+      BADGER_EPHEMERAL: false
+      BADGER_DIRECTORY_KEY: /jaeger/keys
+      BADGER_DIRECTORY_VALUE: /jaeger/values
+    volumes:
+      - type: volume
+        source: jaeger-data
+        target: /jaeger
+    # FIXME expose no ports
+    ports:
+      - "16686:16686"  # HTTP frontend
+    healthcheck:
+      test: ["CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:14269/"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  loki:  # storage backend for log data
+    image: grafana/loki:${LOKI_VERSION}
+    hostname: loki
+    volumes:
+      - type: bind
+        source: ./etc/loki
+        target: /etc/loki
+        read_only: true
+      - type: volume
+        source: loki-data
+        target: /loki
+    # FIXME expose no ports
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: [ "CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:3100/ready" ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  prometheus:  # storage backend for metric data
+    image: prom/prometheus:${PROMETHEUS_VERSION}
+    hostname: prometheus
+    command:
+      # enable pushing data into prometheus
+      - "--web.enable-remote-write-receiver"
+      # since we override the command, we need to re-specify the config file location
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - type: bind
+        source: ./etc/prometheus
+        target: /etc/prometheus
+        read_only: true
+      - type: volume
+        source: prometheus-data
+        target: /prometheus
+    # FIXME expose no ports
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:9090/-/healthy"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  grafana:
+    # log display
+    image: grafana/grafana:${GRAFANA_VERSION}
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    volumes:
+      - type: bind
+        source: ./etc/grafana/provisioning/datasources
+        target: /etc/grafana/provisioning/datasources
+        read_only: true
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      jaeger:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy

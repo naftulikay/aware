@@ -1,0 +1,51 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+common:
+  instance_addr: 0.0.0.0
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+compactor:
+  working_directory: /loki/retention
+  compaction_interval: 15m    # compact every 15 minutes
+  retention_enabled: true
+  retention_delete_delay: 15m  # delete data 15 minutes after it expires
+
+limits_config:
+  retention_period: 5d  # retain five days of data; useful for not losing data over long weekends
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 128
+
+schema_config:
+  configs:
+    - from: 2023-01-01
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        # create one index per day
+        prefix: index_
+        period: 24h
+
+#ruler:
+#  alertmanager_url: http://localhost:9093
+
+analytics:
+  # do not send analytics to grafana labs
+  reporting_enabled: false
