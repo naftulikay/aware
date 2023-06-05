@@ -102,3 +102,30 @@ services:
         condition: service_healthy
       prometheus:
         condition: service_healthy
+
+  collector:
+    image: grafana/agent:latest
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "/etc/grafana/agent/config.river"
+    environment:
+      AGENT_MODE: flow
+      CONFIG_FILE_PATH: /etc/grafana/agent/config.river
+    volumes:
+      - type: bind
+        source: ./etc/grafana/agent
+        target: /etc/grafana/agent
+        read_only: true
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "12345:12345"
+    # FIXME neither curl nor wget are installed in the image, hence we can't health check
+    depends_on:
+      jaeger:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy

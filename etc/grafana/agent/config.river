@@ -1,0 +1,76 @@
+logging {
+    level = "debug"
+    format = "logfmt"
+}
+
+// INFO this setup accepts logs, metrics, and traces via OTLP on port 4317 (gRPC) and 4318 (HTTP). all data is logged to
+//      the console, and simultaneously collected into batches before sending to the final destination, which for logs is
+//      Loki, for metrics is Prometheus (remote write), and for tracing is Jaeger (simple OTLP forward).
+
+// inputs
+otelcol.receiver.otlp "default" {
+    grpc {}
+    http {}
+
+    output {
+        logs = [
+            otelcol.exporter.logging.default.input,
+            otelcol.processor.batch.default.input,
+        ]
+        metrics = [
+            otelcol.exporter.logging.default.input,
+            otelcol.processor.batch.default.input,
+        ]
+
+        traces = [
+            otelcol.exporter.logging.default.input,
+            otelcol.processor.batch.default.input,
+        ]
+    }
+}
+
+// processing
+otelcol.processor.batch "default" {
+    output {
+        metrics = [otelcol.exporter.prometheus.default.input]
+        logs = [otelcol.exporter.loki.default.input]
+        traces = [otelcol.exporter.otlp.jaeger.input]
+    }
+}
+
+// outputs
+otelcol.exporter.logging "default" {
+    verbosity = "normal"
+}
+
+// output: logging -> loki
+otelcol.exporter.loki "default" {
+    forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+    endpoint {
+        url = "loki:3100"
+    }
+}
+
+// output: metrics -> prometheus
+otelcol.exporter.prometheus "default" {
+    forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+    endpoint {
+        url = "http://prometheus:9090/api/v1/push"
+    }
+}
+
+// output: traces -> otlp (jaeger)
+otelcol.exporter.otlp "jaeger" {
+    client {
+        endpoint = "jaeger:4317"
+        tls {
+            insecure = true
+        }
+    }
+}
