@@ -22,7 +22,6 @@ services:
       - type: volume
         source: jaeger-data
         target: /jaeger
-    # FIXME expose no ports
     ports:
       - "4317"   # grpc otlp
       - "4318"   # http otlp
