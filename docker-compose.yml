@@ -24,7 +24,9 @@ services:
         target: /jaeger
     # FIXME expose no ports
     ports:
-      - "16686:16686"  # HTTP frontend
+      - "4317"   # grpc otlp
+      - "4318"   # http otlp
+      - "16686"  # HTTP frontend
     healthcheck:
       test: ["CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:14269/"]
       interval: 2s
@@ -42,9 +44,8 @@ services:
       - type: volume
         source: loki-data
         target: /loki
-    # FIXME expose no ports
     ports:
-      - "3100:3100"
+      - "3100"
     healthcheck:
       test: [ "CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:3100/ready" ]
       interval: 2s
@@ -67,9 +68,8 @@ services:
       - type: volume
         source: prometheus-data
         target: /prometheus
-    # FIXME expose no ports
     ports:
-      - "9090:9090"
+      - "9090"
     healthcheck:
       test: ["CMD", "wget", "-o", "/dev/null", "-O", "/dev/null", "http://127.0.0.1:9090/-/healthy"]
       interval: 2s
@@ -117,11 +117,20 @@ services:
         source: ./etc/grafana/agent
         target: /etc/grafana/agent
         read_only: true
+      - type: bind
+        source: ./lib/grafana/agent/healthcheck.sh
+        target: /lib/grafana-healthcheck.sh
+        read_only: true
     ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "12345:12345"
-    # FIXME neither curl nor wget are installed in the image, hence we can't health check
+      - "4317:4317"        # grpc otlp
+      - "4318:4318"        # http otlp
+      - "12201:12201/udp"  # gelf
+      - "12345:12345"      # web console
+    healthcheck:
+      test: [ "CMD", "/lib/grafana-healthcheck.sh" ]
+      interval: 2s
+      timeout: 30s
+      retries: 15
     depends_on:
       jaeger:
         condition: service_healthy

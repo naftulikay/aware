@@ -29,12 +29,25 @@ otelcol.receiver.otlp "default" {
     }
 }
 
+loki.source.gelf "default" {
+    forward_to = [loki.write.default.receiver]
+    relabel_rules = loki.relabel.gelf.rules
+}
+
 // processing
 otelcol.processor.batch "default" {
     output {
         metrics = [otelcol.exporter.prometheus.default.input]
         logs = [otelcol.exporter.loki.default.input]
         traces = [otelcol.exporter.otlp.jaeger.input]
+    }
+}
+
+loki.relabel "gelf" {
+    forward_to = [loki.write.default.receiver]
+    rule {
+        source_labels = ["__gelf_message_host"]
+        target_label = "host"
     }
 }
 
