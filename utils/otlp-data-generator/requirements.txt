@@ -1,3 +1,5 @@
-flask
-opentelemetry-distro
-opentelemetry-exporter-otlp
+flask==2.3.2
+logfmter==0.0.6
+opentelemetry-distro==0.39b0
+opentelemetry-exporter-otlp==1.18.0
+requests
