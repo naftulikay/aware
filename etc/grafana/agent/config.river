@@ -1,5 +1,5 @@
 logging {
-    level = "debug"
+    level = "info"
     format = "logfmt"
 }
 
@@ -30,8 +30,30 @@ otelcol.receiver.otlp "default" {
 }
 
 loki.source.gelf "default" {
-    forward_to = [loki.write.default.receiver]
+    forward_to = [loki.write.default.receiver, loki.echo.default.receiver]
     relabel_rules = loki.relabel.gelf.rules
+}
+
+loki.source.syslog "default" {
+    listener {
+        address = "0.0.0.0:5514"
+        protocol = "tcp"
+        labels = { transport = "syslog", protocol = "tcp" }
+        label_structured_data = true
+        use_rfc5424_message = true
+        use_incoming_timestamp = true
+    }
+
+    listener {
+        address = "0.0.0.0:5514"
+        protocol = "udp"
+        labels = { transport = "syslog", protocol = "udp" }
+        label_structured_data = true
+        use_rfc5424_message = true
+        use_incoming_timestamp = true
+    }
+
+    forward_to = [loki.write.default.receiver, loki.echo.default.receiver]
 }
 
 // processing
@@ -53,7 +75,9 @@ loki.relabel "gelf" {
 
 // outputs
 otelcol.exporter.logging "default" {
-    verbosity = "normal"
+    verbosity = "detailed"
+    sampling_initial = 10
+    sampling_thereafter = 10
 }
 
 // output: logging -> loki
@@ -66,6 +90,8 @@ loki.write "default" {
         url = "http://loki:3100/loki/api/v1/push"
     }
 }
+
+loki.echo "default" {}
 
 // output: metrics -> prometheus
 otelcol.exporter.prometheus "default" {

@@ -21,8 +21,19 @@ And that's it!
 
 ## Usage
 
-After starting the compose environment, you can now send OpenTelemetry logs, metrics, and traces to localhost, port 4317
-for HTTP/2 and gRPC, port 4318 for HTTP/1.
+After starting the compose environment, there are a few provided ways to send telemetry data to the collector:
+
+<dl>
+ <dt>OpenTelemetry</dt>
+ <dd>
+  You can send OpenTelemetry logs, metrics, and traces to localhost on port 4317 for a gRPC transport and port 4318
+  for an HTTP/1 transport.
+ </dd>
+ <dt>GELF</dt>
+ <dd>You can send log data over UDP to localhost on port 12201 in GELF format.</dd>
+ <dt>Syslog</dt>
+ <dd>You can send RFC-5424 format syslog messages to localhost on port 5514 via both TCP and UDP.</dd>
+</dl>
 
 To access your observability data, open [http://localhost:3000](http://localhost:3000) to access Grafana.
 

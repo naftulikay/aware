@@ -123,6 +123,8 @@ services:
     ports:
       - "4317:4317"        # grpc otlp
       - "4318:4318"        # http otlp
+      - "5514:5514"        # syslog tcp
+      - "5514:5514/udp"    # syslog udp
       - "12201:12201/udp"  # gelf
       - "12345:12345"      # web console
     healthcheck:
