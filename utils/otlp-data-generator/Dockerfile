@@ -17,4 +17,4 @@ RUN opentelemetry-bootstrap -a install
 ENTRYPOINT ["opentelemetry-instrument"]
 
 # and we will pass `flask run -p 8080` to it, which it will execute
-CMD ["flask", "run", "-p", "8080"]
+CMD ["flask", "run", "--host", "0.0.0.0", "-p", "8080"]

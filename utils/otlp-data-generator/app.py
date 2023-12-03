@@ -32,6 +32,8 @@ OTLP_LOG_ENDPOINT = os.environ.get("OTLP_LOG_ENDPOINT", os.environ.get("OTLP_END
 OTLP_METRIC_ENDPOINT = os.environ.get("OTLP_METRIC_ENDPOINT", os.environ.get("OTLP_ENDPOINT", "localhost:4317"))
 OTLP_TRACE_ENDPOINT = os.environ.get("OTLP_TRACE_ENDPOINT", os.environ.get("OTLP_ENDPOINT", "localhost:4317"))
 
+print(f"logs={OTLP_LOG_ENDPOINT}, metrics={OTLP_METRIC_ENDPOINT}, traces={OTLP_TRACE_ENDPOINT}")
+
 
 resource = Resource(attributes={
     SERVICE_NAME: APP_NAME,
@@ -45,6 +47,9 @@ set_logger_provider(logger_provider)
 
 logging_handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
 logging.getLogger().addHandler(logging_handler)
+
+console_handler = logging.StreamHandler()
+logging.getLogger().addHandler(console_handler)
 
 # setup OTLP metric exporter
 metric_reader = PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=OTLP_METRIC_ENDPOINT, insecure=True))
@@ -64,7 +69,7 @@ tracer, meter = (trace.get_tracer(f"{APP_NAME}.tracer"), metrics.get_meter(f"{AP
 roll_counter = meter.create_counter('roll_counter', description="The number of rolls by roll value.")
 
 # create a logger to be used by our whole app
-app_logger = logging.getLogger(APP_NAME)
+app_logger = logging.getLogger().getChild(APP_NAME)
 
 app = Flask(__name__)
 
@@ -117,3 +122,4 @@ def randroll() -> int:
 @app.route("/health")
 def healthcheck():
     return 200
+
