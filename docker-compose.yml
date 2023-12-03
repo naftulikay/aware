@@ -104,6 +104,7 @@ services:
 
   collector:
     image: grafana/agent:latest
+    hostname: collector
     command:
       - "run"
       - "--server.http.listen-addr=0.0.0.0:12345"
@@ -138,4 +139,17 @@ services:
       loki:
         condition: service_healthy
       prometheus:
+        condition: service_healthy
+
+  data-generator:
+    profiles: [generator]
+    image: naftulikay/aware-otlpdatagen:latest
+    build:
+      context: utils/otlp-data-generator
+    environment:
+      OTLP_ENDPOINT: "collector:4317"
+    ports:
+      - "8080:8080"
+    depends_on:
+      collector:
         condition: service_healthy

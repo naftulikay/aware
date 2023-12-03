@@ -19,6 +19,13 @@ docker compose up
 
 And that's it!
 
+If you'd like to run the OTLP data generator utility, add the `generator` profile when running the cluster and allow
+building of the local image:
+
+```shell
+docker compose --profile generator up --build
+```
+
 ## Usage
 
 After starting the compose environment, there are a few provided ways to send telemetry data to the collector:
