@@ -7,9 +7,19 @@ volumes:
   prometheus-data: {} # storage of metrics data on-disk from prometheus
 
 services:
+  jaeger-chown:
+    image: alpine:latest
+    command: ["chown", "-R", "${JAEGER_USER_ID}:${JAEGER_USER_ID}", "/jaeger"]
+    restart: on-failure
+    volumes:
+      - type: volume
+        source: jaeger-data
+        target: /jaeger
+
   jaeger:  # storage backend for trace data
     image: jaegertracing/all-in-one:${JAEGER_VERSION}
     hostname: jaeger
+    user: "${JAEGER_USER_ID}"
     environment:
       # enable opentelemetry support
       COLLECTOR_OTLP_ENABLED: true
@@ -31,6 +41,9 @@ services:
       interval: 2s
       timeout: 2s
       retries: 15
+    depends_on:
+        jaeger-chown:
+            condition: service_completed_successfully
 
   loki:  # storage backend for log data
     image: grafana/loki:${LOKI_VERSION}
